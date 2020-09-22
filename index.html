@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>reveal.js</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/white.css" id="theme">
+		<link rel="stylesheet" href="css/docker.css">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="plugin/highlight/monokai.css" id="highlight-theme">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<h1>Docker入門</h1>
+					<img src="images/docker-logo.svg" alt="reveal.js logo" style="height: 180px; margin: 0 auto 4rem auto; background: transparent;" class="docker-logo">
+				
+				</section>
+				<section>
+					<h2>Dockerとは？</h2>
+					<p>Linuxのコンテナ技術を使ったもので、仮想マシンとよく比較されるもの</p>
+				</section>
+				<section>
+					<h2>仮想化サービスの比較</h2>
+					<img src="images/xaas.jpg" alt="XaaS comparison">
+				</section>
+				<section>
+					<h2>コンテナと仮想マシンの違い</h2>
+					<img src="images/vm_container.png" alt="VM vs Container">
+				</section>
+				<section>
+					<h2>コンテナ化の利点</h2>
+					<ul>
+						<li>コード化されたファイルを共有することで、　どこでも誰でも同じ環境が作れる(IaC)</li>
+						<li>作成した環境を配布しやすい</li>
+						<li>スクラップ＆ビルドが用意</li>
+					</ul>
+				</section>
+				<section>
+					<section>
+						<h2>Dockerの実行</h2>
+						<pre><code class="bash" data-trim>
+							docker run --rm --name my-nginx -d -p 8080:80 nginx
+						</code></pre>
+					</section>
+					<section>
+						<p>ブラウザで動作確認</p>
+						<a href="http://localhost:8080">http://localhost:8080</a>
+					</section>
+					<section>
+						<h2>各種コマンド</h2>
+						<pre><code class="bash" data-trim>
+							docker ps
+							docker exec -it {CONTAINER ID} bash
+							docker image ls
+							docker stop {CONTAINER ID}
+							docker rm {CONTAINER ID}
+						</code></pre>
+					</section>
+					<section>
+						<h2>volumeのマウント</h2>
+						<pre><code class="bash" data-trim>
+							docker run -v $PWD:/usr/share/nginx/html -d -p 8080:80 nginx
+						</code></pre>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h3>イメージの作成</h3>
+						<p>Dockerfileを作成して独自のイメージを作成</p>
+						<pre><code class="Dockerfile" data-trim data-line-numbers>
+							FROM node:lts-alpine
+
+							RUN npm install -g http-server
+							WORKDIR /app
+							
+							COPY package*.json ./
+							RUN npm install
+							
+							COPY . .
+							RUN npm run build
+							
+							EXPOSE 8080
+							CMD [ "http-server", "dist" ]
+						</code></pre>
+					</section>
+					<section>
+						<h2>イメージのビルド</h2>
+						<pre><code class="bash" data-trim>
+							docker build -t vueapp .
+						</code></pre>
+						<p>イメージの確認</p>
+						<pre><code class="bash" data-trim>
+							docker image ls
+						</code></pre>
+						<p>コンテナの作成と起動</p>
+						<pre><code class="bash" data-trim>
+							docker run -it -p 8080:8080 --rm --name vueapp-run vueapp
+						</code></pre>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h2>Docker compose</h2>
+						<p>複数のコンテナを組み合わせた環境をYAMLで記述できる</p>
+						<pre><code class="yml" data-trim data-line-numbers="1-18|3-9|11-18">
+							version: "3"
+							services: 
+							  web:
+							    build: ./vue-web
+							    depends_on:
+							      - json-server
+							    container_name: "docker-vue"
+							    ports: 
+							      - "8080:80"
+								
+							  json-server:
+							    build: ./json-server
+							    container_name: json-api
+							    ports:
+							      - "3000:3000"
+							    volumes:
+							      - ./json-server/db.json:/data/db.json
+							    command: json-server --watch db.json --host 0.0.0.0
+						</code></pre>
+					</section>
+					<section>
+						<h2>Docker-composeの起動</h2>
+						<pre><code class="bash" data-trim>
+							docker-compose up
+						</code></pre>
+						<p>各種コマンド</p>
+						<pre><code class="bash" data-trim>
+							docker-compose up -d
+							docker-compose down
+							docker-compose build
+							docker-compose logs -f
+						</code></pre>
+					</section>
+				</section>
+				<section>
+					<h2>Kubernetes</h2>
+					<img src="images/kubernetes.png" style="height: 180px;"  alt="kubernetes logo">
+					<p>本番の運用などに使われるパワフルなツール、　詳細はまた次回・・・
+					</p>
+				</section>
+			</div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				hash: true,
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ],
+				dependencies: [
+					// ... 
+					{ src: 'plugin/chart/Chart.min.js'},
+					{ src: 'plugin/anything/anything.js' },
+					// ... 
+				],
+				anything: [
+					{
+						className: "random",
+						defaults: {min: 0, max: 9},
+						initialize: (function(container, options) {
+							container.innerHTML = Math.trunc( options.min + Math.random()*(options.max-options.min + 1) );
+						}),
+						className: "chart",
+						initialize: (function (container, options) { container.chart = new Chart(container.getContext("2d"), options); })
+					},
+				],
+			});
+		</script>
+	</body>
+</html>
